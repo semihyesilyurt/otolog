@@ -1,5 +1,5 @@
-const PROXY_HOST = "77.92.154.204";
-const PROXY_PORT = 8888;
+const PROXY_HOST = "YOUR_PROXY_HOST";
+const PROXY_PORT = YOUR_PROXY_PORT;
 
 const proxyDomains = [
   "partslink24.com",
