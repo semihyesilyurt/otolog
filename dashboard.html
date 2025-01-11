@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTOLOG - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-card">
+            <div class="welcome-section">
+                <h2>Hoşgeldiniz <span id="userName">...</span></h2>
+                <div class="subscription-info">
+                    <h3 id="packageName">...</h3>
+                    <div class="subscription-dates">
+                        <span id="startDate">Başlangıç: ...</span>
+                        <span id="daysLeft" class="days-left">Kalan: ... gün</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subscription-alert hidden" id="subscriptionAlert">
+                <p>Aboneliğiniz sona ermiştir!</p>
+                <button id="renewButton" class="renew-btn">Abonelik Yenile</button>
+            </div>
+
+            <div class="actions-section">
+                <div class="system-toggle-container">
+                    <a href="https://www.partslink24.com/partslink24/startup.do" target="_blank" class="partslink-btn">
+                        PARTSLINK24
+                    </a>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="activeMode" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span>Aktif Mod</span>
+                </div>
+            </div>
+
+            <button id="logoutButton" class="logout-btn">Çıkış Yap</button>
+
+            <footer class="dashboard-footer">
+                <div id="messageBox" class="message-box"></div>
+                <div class="footer-bottom">
+                    <span class="version">v1.0.0</span>
+                    <a href="https://wa.me/908503073309" target="_blank" class="support-btn">
+                        <img src="images/wa.png" alt="WhatsApp" class="whatsapp-icon">
+                        Destek
+                    </a>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <script src="js/libs/supabase.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html> 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTOLOG - SSL Sertifika Kurulumu</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .cert-guide {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .step {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+        }
+        .step h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        .step img {
+            max-width: 100%;
+            margin: 1rem 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+        }
+        .download-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="cert-guide">
+        <h1>SSL Sertifika Kurulum Rehberi</h1>
+        
+        <div class="step">
+            <h3>1. Sertifikayı İndirin</h3>
+            <p>Aşağıdaki butona tıklayarak SSL sertifikasını indirin:</p>
+            <a href="https://otolog.com/cert" class="download-btn" target="_blank">Sertifikayı İndir</a>
+        </div>
+
+        <div class="step">
+            <h3>2. Chrome'da Sertifika Ayarlarını Açın</h3>
+            <p>Chrome tarayıcınızda şu adımları izleyin:</p>
+            <ol>
+                <li>Chrome menüsünü açın (⋮)</li>
+                <li>Ayarlar > Gizlilik ve Güvenlik</li>
+                <li>Güvenlik > Sertifikaları Yönet'e tıklayın</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>3. Sertifikayı İçe Aktarın</h3>
+            <ol>
+                <li>"Yetkili Kök Sertifika Yetkilileri" sekmesine geçin</li>
+                <li>"İçe Aktar" butonuna tıklayın</li>
+                <li>İndirdiğiniz sertifika dosyasını seçin</li>
+                <li>"Sonraki" butonuna tıklayın</li>
+                <li>"Tüm sertifikaları aşağıdaki depolama alanına yerleştir" seçeneğini işaretleyin</li>
+                <li>"Yetkili Kök Sertifika Yetkilileri"ni seçin</li>
+                <li>"Sonraki" ve "Bitir" butonlarına tıklayın</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>4. Tarayıcıyı Yeniden Başlatın</h3>
+            <p>Değişikliklerin etkili olması için Chrome tarayıcınızı yeniden başlatın.</p>
+        </div>
+
+        <div class="step">
+            <h3>5. Eklentiyi Yeniden Başlatın</h3>
+            <p>OTOLOG eklentisini devre dışı bırakıp tekrar etkinleştirin:</p>
+            <ol>
+                <li>Chrome menüsünden Uzantılar > Uzantıları Yönet'e gidin</li>
+                <li>OTOLOG eklentisini bulun</li>
+                <li>Açma/kapama düğmesini kapatıp tekrar açın</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html> 

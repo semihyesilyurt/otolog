@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "OTOLOG",
+  "version": "1.0",
+  "description": "Modern arayüzlü oturum yönetim eklentisi",
+  "permissions": [
+    "storage",
+    "proxy",
+    "webRequest",
+    "webRequestAuthProvider",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://*.partslink24.com/*",
+    "*://*.usercentrics.eu/*",
+    "*://*.go-mpulse.net/*",
+    "*://*.doubleclick.net/*",
+    "*://*.googletagmanager.com/*",
+    "*://*.supabase.co/*"
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "web_accessible_resources": [{
+    "resources": [
+      "js/libs/*",
+      "cert/*",
+      "pages/*"
+    ],
+    "matches": ["<all_urls>"]
+  }],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+} 

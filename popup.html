@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTOLOG</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <div class="logo">
+                <h1>OTOLOG</h1>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <input type="text" id="companyCode" placeholder=" " required>
+                    <label for="companyCode">Firma Kodu</label>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="username" placeholder=" " required>
+                    <label for="username">Kullanıcı Adı</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder=" " required>
+                    <label for="password">Şifre</label>
+                </div>
+                <div class="remember-me">
+                    <input type="checkbox" id="rememberMe">
+                    <label for="rememberMe">Beni Hatırla</label>
+                </div>
+                <button type="submit" class="login-btn">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+    <script src="js/libs/supabase.js"></script>
+    <script src="js/popup.js"></script>
+</body>
+</html> 
