@@ -1,5 +1,5 @@
-const PROXY_HOST = "YOUR_PROXY_HOST";
-const PROXY_PORT = YOUR_PROXY_PORT;
+const PROXY_HOST = "77.92.154.204";
+const PROXY_PORT = 8888;
 
 const proxyDomains = [
   "partslink24.com",
@@ -131,6 +131,92 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
+// GitHub API endpoint'i
+const GITHUB_REPO = 'semihyesilyurt/otolog';
+const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+
+// Sürüm kontrolü
+async function checkForUpdates() {
+    try {
+        // Mevcut sürümü al
+        const manifest = chrome.runtime.getManifest();
+        const currentVersion = manifest.version;
+
+        // GitHub'dan en son sürümü kontrol et
+        const response = await fetch(GITHUB_API);
+        const data = await response.json();
+
+        // API yanıtını kontrol et
+        if (!data || !data.tag_name) {
+            console.log('Henüz yayınlanmış bir sürüm yok');
+            return;
+        }
+
+        // Sürüm numarasını temizle (v1.1.0 -> 1.1.0)
+        const latestVersion = data.tag_name.toLowerCase().replace(/^v/, '');
+
+        // Sürümleri karşılaştır
+        if (compareVersions(latestVersion, currentVersion) > 0) {
+            // Yeni sürüm bulundu, güncelleme bildirimini göster
+            chrome.notifications.create('update-available', {
+                type: 'basic',
+                iconUrl: 'images/icon128.png',
+                title: 'OTOLOG Güncelleme',
+                message: `Yeni sürüm (${latestVersion}) mevcut. Güncellemek için tıklayın.`,
+                requireInteraction: true
+            });
+
+            // Yeni sürümü indir
+            const zipUrl = data.zipball_url;
+            const updateResponse = await fetch(zipUrl);
+            const updateBlob = await updateResponse.blob();
+
+            // Güncelleme dosyasını kaydet
+            const updateFile = new File([updateBlob], 'update.zip');
+            
+            // Chrome'un kendi güncelleme sistemini kullan
+            chrome.runtime.requestUpdateCheck((status) => {
+                if (status === 'update_available') {
+                    chrome.runtime.reload();
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Güncelleme kontrolü hatası:', error);
+    }
+}
+
+// Sürüm numaralarını karşılaştır (1.0.0 vs 1.1.0)
+function compareVersions(v1, v2) {
+    const v1Parts = v1.split('.').map(Number);
+    const v2Parts = v2.split('.').map(Number);
+    
+    for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+        const v1Part = v1Parts[i] || 0;
+        const v2Part = v2Parts[i] || 0;
+        
+        if (v1Part > v2Part) return 1;
+        if (v1Part < v2Part) return -1;
+    }
+    
+    return 0;
+}
+
+// Bildirim tıklama olayını dinle
+chrome.notifications.onClicked.addListener((notificationId) => {
+    if (notificationId === 'update-available') {
+        // Güncelleme sayfasını aç
+        chrome.tabs.create({
+            url: `https://github.com/${GITHUB_REPO}/releases/latest`
+        });
+    }
+    if (notificationId === 'cert-warning') {
+        chrome.tabs.create({
+            url: chrome.runtime.getURL('pages/cert_guide.html')
+        });
+    }
+});
+
 // Eklenti yüklendiğinde veya güncellendiğinde çalışacak
 chrome.runtime.onInstalled.addListener(async () => {
     chrome.proxy.settings.set({
@@ -140,7 +226,22 @@ chrome.runtime.onInstalled.addListener(async () => {
     isEnabled = false;
     isSubscriptionExpired = false;
     isAuthenticated = false;
-}); 
+    
+    // İlk sürüm kontrolünü yap
+    await checkForUpdates();
+
+    // Her 6 saatte bir güncelleme kontrolü yap
+    chrome.alarms.create('updateCheck', {
+        periodInMinutes: 360 // 6 saat
+    });
+});
+
+// Periyodik güncelleme kontrolü
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'updateCheck') {
+        checkForUpdates();
+    }
+});
 
 // Sistem hataları için listener
 chrome.proxy.onProxyError.addListener(function(details) {

@@ -24,3 +24,14 @@ Modern arayüzlü oturum yönetim eklentisi.
 3. Aktif/Pasif mod ile sistem kullanımını yönetin
 
 ## Geliştirme
+
+## Sürüm Notları
+
+### v1.1.0
+- Oturum yönetimi iyileştirildi
+- Sistem durumu kontrolü geliştirildi
+- Güvenlik güncellemeleri yapıldı
+- Performans iyileştirmeleri
+
+### v1.0.0
+- İlk sürüm
