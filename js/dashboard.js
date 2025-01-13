@@ -139,15 +139,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.getElementById('logoutButton').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            await chrome.runtime.sendMessage({ 
-                action: "setAuthStatus", 
-                isAuthenticated: false 
-            });
-            // Çıkış yapıldığında aktif mod durumunu sıfırla
-            await chrome.storage.local.remove(['activeModeState']);
-            await chrome.runtime.sendMessage({ action: "toggleProxy", enable: false });
-            window.location.href = 'popup.html';
+            try {
+                // Önce partslink24.com session ve cookie'lerini temizle
+                const cookieRemovalPromises = [
+                    chrome.cookies.remove({
+                        url: 'https://www.partslink24.com',
+                        name: 'JSESSIONID'
+                    }),
+                    chrome.cookies.remove({
+                        url: 'https://www.partslink24.com',
+                        name: 'BIGipServerpartslink24_prod_pool'
+                    })
+                ];
+                
+                await Promise.all(cookieRemovalPromises);
+
+                // Supabase oturumunu sonlandır
+                await supabaseClient.auth.signOut();
+
+                // Background script'e oturum durumunu bildir ve proxy'yi devre dışı bırak
+                await chrome.runtime.sendMessage({ 
+                    action: "setAuthStatus", 
+                    isAuthenticated: false 
+                });
+                await chrome.runtime.sendMessage({ 
+                    action: "toggleProxy", 
+                    enable: false 
+                });
+
+                // Çıkış yapıldığında aktif mod durumunu sıfırla
+                await chrome.storage.local.remove(['activeModeState']);
+
+                // Beni hatırla durumunu kontrol et
+                const { rememberMe } = await chrome.storage.local.get(['rememberMe']);
+                
+                // Beni hatırla aktif değilse kayıtlı bilgileri temizle
+                if (!rememberMe) {
+                    await chrome.storage.local.remove(['credentials']);
+                }
+
+                window.location.href = 'popup.html';
+            } catch (error) {
+                console.error('Çıkış yapılırken hata:', error);
+                showMessage('Çıkış yapılırken bir hata oluştu', 'error');
+            }
         });
 
     } catch (error) {

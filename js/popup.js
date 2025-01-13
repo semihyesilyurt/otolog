@@ -58,11 +58,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Kayıtlı bilgileri yükle
     try {
-        const savedCredentials = await chrome.storage.local.get(['credentials']);
-        if (savedCredentials.credentials) {
-            companyCodeInput.value = savedCredentials.credentials.companyCode;
-            usernameInput.value = savedCredentials.credentials.username;
-            rememberMeCheckbox.checked = true;
+        const { credentials, rememberMe } = await chrome.storage.local.get(['credentials', 'rememberMe']);
+        
+        // Beni hatırla durumunu ayarla
+        rememberMeCheckbox.checked = !!rememberMe;
+        
+        // Eğer beni hatırla aktifse ve kayıtlı bilgiler varsa
+        if (rememberMe && credentials) {
+            companyCodeInput.value = credentials.companyCode;
+            usernameInput.value = credentials.username;
         }
     } catch (error) {
         console.error('Kayıtlı bilgiler yüklenirken hata:', error);
@@ -125,11 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     credentials: {
                         companyCode: credentials.companyCode,
                         username: credentials.username
-                    }
+                    },
+                    rememberMe: true
                 });
             } else {
                 // Kayıtlı bilgileri temizle
                 await chrome.storage.local.remove(['credentials']);
+                await chrome.storage.local.remove(['rememberMe']);
             }
 
             // Proxy'yi etkinleştir
