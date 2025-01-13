@@ -27,6 +27,17 @@ Modern arayüzlü oturum yönetim eklentisi.
 
 ## Sürüm Notları
 
+### v1.2.1
+- Aktif mod durumu hatırlama özelliği eklendi
+- Oturum yönetimi iyileştirildi
+- Performans optimizasyonları yapıldı
+
+### v1.2.0
+- Otomatik güncelleme sistemi eklendi
+- Sürüm kontrolü ve bildirimler eklendi
+- GitHub entegrasyonu tamamlandı
+- Performans iyileştirmeleri yapıldı
+
 ### v1.1.0
 - Oturum yönetimi iyileştirildi
 - Sistem durumu kontrolü geliştirildi

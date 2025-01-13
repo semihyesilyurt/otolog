@@ -81,6 +81,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Oturum kontrolü
         const { data: { session }, error } = await supabaseClient.auth.getSession();
+        
+        // Background script'e oturum durumunu bildir
+        await chrome.runtime.sendMessage({ 
+            action: "setAuthStatus", 
+            isAuthenticated: !!session 
+        });
+
         if (error || !session) {
             window.location.href = 'popup.html';
             return;
@@ -88,6 +95,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         currentUser = session.user;
         await checkSubscription();
+
+        // Aktif mod durumunu kontrol et ve ayarla
+        const activeModeCheckbox = document.getElementById('activeMode');
+        const savedModeState = await chrome.storage.local.get(['activeModeState']);
+        
+        if (savedModeState.activeModeState !== undefined) {
+            activeModeCheckbox.checked = savedModeState.activeModeState;
+            // Sistem durumunu kayıtlı duruma göre ayarla
+            await chrome.runtime.sendMessage({ 
+                action: "toggleProxy",
+                enable: savedModeState.activeModeState
+            });
+        }
 
         // Event Listeners
         document.getElementById('activeMode').addEventListener('change', async (e) => {
@@ -103,6 +123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showMessage('Aboneliğiniz sona erdiği için sistem aktif moda alınamaz', 'error');
                 return;
             }
+
+            // Yeni durumu kaydet
+            await chrome.storage.local.set({ activeModeState: isChecked });
 
             await chrome.runtime.sendMessage({ 
                 action: "toggleProxy",
@@ -121,6 +144,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 action: "setAuthStatus", 
                 isAuthenticated: false 
             });
+            // Çıkış yapıldığında aktif mod durumunu sıfırla
+            await chrome.storage.local.remove(['activeModeState']);
             await chrome.runtime.sendMessage({ action: "toggleProxy", enable: false });
             window.location.href = 'popup.html';
         });
