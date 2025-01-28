@@ -8,7 +8,7 @@ Modern arayüzlü oturum yönetim eklentisi.
 - Güvenli oturum yönetimi
 - Abonelik sistemi entegrasyonu
 - Akıllı proxy yönetimi
-- SSL sertifika desteği
+- Otomatik güncelleme sistemi
 
 ## Kurulum
 
@@ -26,6 +26,18 @@ Modern arayüzlü oturum yönetim eklentisi.
 ## Geliştirme
 
 ## Sürüm Notları
+
+### v1.2.3
+- GitHub entegrasyonu tamamlandı
+- Otomatik güncelleme sistemi eklendi
+- Performans iyileştirmeleri yapıldı
+- Sürüm kontrolü ve bildirimler eklendi
+
+### v1.2.2
+- Çıkış yapma işlemi iyileştirildi
+- "Beni Hatırla" özelliği düzeltildi
+- Cookie ve oturum temizleme geliştirildi
+- Hata düzeltmeleri yapıldı
 
 ### v1.2.1
 - Aktif mod durumu hatırlama özelliği eklendi

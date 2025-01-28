@@ -32,45 +32,42 @@ function generatePacScript() {
   `.replace(/[^\x00-\x7F]/g, "");
 }
 
-// SSL Sertifika kontrolü
-async function checkCertificate() {
-    try {
-        const response = await fetch('https://otolog.com/api/check-cert', {
-            method: 'HEAD'
-        });
-        return response.ok;
-    } catch (error) {
-        if (error.message.includes('SSL')) {
-            return false;
-        }
-        return true;
-    }
-}
-
-// Sertifika uyarısı göster
-function showCertificateWarning() {
-    chrome.notifications.create('cert-warning', {
-        type: 'basic',
-        iconUrl: 'images/icon128.png',
-        title: 'SSL Sertifika Hatası',
-        message: 'Güvenli bağlantı için sertifika kurulumu gerekiyor. Kurulum rehberini görüntülemek için tıklayın.',
-        requireInteraction: true
-    });
-}
-
-// Notification tıklama olayını dinle
-chrome.notifications.onClicked.addListener((notificationId) => {
-    if (notificationId === 'cert-warning') {
-        chrome.tabs.create({
-            url: chrome.runtime.getURL('pages/cert_guide.html')
-        });
-    }
-});
-
 // Eklenti aktif/pasif durumu kontrolü
 let isEnabled = false;
 let isSubscriptionExpired = false;
 let isAuthenticated = false;
+
+// Supabase yapılandırması
+const SUPABASE_URL = 'https://vjdbbbgfnebdptyfmnkx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZGJiYmdmbmViZHB0eWZtbmt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MzE4MzQsImV4cCI6MjA1MjEwNzgzNH0.67HlAfvqrg_Yua7jKbjt7YrT7PeLA9BjNKa6MIR0fWY';
+
+// Log kaydetme fonksiyonu
+function logUserActivity(eventType, description, requestDetails = null) {
+    const logData = {
+        user_id: null, // Dashboard'dan gönderilecek
+        ip_address: null, // Dashboard'dan alınacak
+        request: requestDetails,
+        proxy: {
+            address: `${PROXY_HOST}:${PROXY_PORT}`,
+            status: isEnabled ? "connected" : "disconnected"
+        },
+        event: {
+            type: eventType,
+            description: description,
+            timestamp: new Date().toISOString()
+        },
+        device: {
+            browser: navigator.userAgent,
+            device_type: "desktop"
+        }
+    };
+
+    // Log verilerini dashboard'a gönder
+    chrome.runtime.sendMessage({
+        action: "saveLog",
+        logData: logData
+    });
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "getProxyStatus") {
@@ -126,6 +123,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 scope: "regular"
             });
         }
+        
+        // Proxy durumu değişikliğini logla
+        logUserActivity(
+            "proxy_status_changed",
+            `Proxy durumu ${message.enable ? 'aktif' : 'pasif'} olarak değiştirildi.`
+        );
         
         sendResponse({ isEnabled });
     }
@@ -209,11 +212,6 @@ chrome.notifications.onClicked.addListener((notificationId) => {
         // Güncelleme sayfasını aç
         chrome.tabs.create({
             url: `https://github.com/${GITHUB_REPO}/releases/latest`
-        });
-    }
-    if (notificationId === 'cert-warning') {
-        chrome.tabs.create({
-            url: chrome.runtime.getURL('pages/cert_guide.html')
         });
     }
 });

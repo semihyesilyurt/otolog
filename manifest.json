@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OTOLOG",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Modern arayüzlü oturum yönetim eklentisi",
   "permissions": [
     "storage",
@@ -21,7 +21,8 @@
     "*://*.googletagmanager.com/*",
     "*://*.supabase.co/*",
     "https://api.github.com/*",
-    "https://github.com/*"
+    "https://github.com/*",
+    "https://api.ipify.org/*"
   ],
   "background": {
     "service_worker": "js/background.js"
@@ -32,7 +33,6 @@
   "web_accessible_resources": [{
     "resources": [
       "js/libs/*",
-      "cert/*",
       "pages/*"
     ],
     "matches": ["<all_urls>"]

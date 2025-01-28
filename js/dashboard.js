@@ -82,10 +82,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Oturum kontrolü
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         
-        // Background script'e oturum durumunu bildir
-        await chrome.runtime.sendMessage({ 
-            action: "setAuthStatus", 
-            isAuthenticated: !!session 
+        // Log mesajlarını dinle
+        chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+            if (message.action === "saveLog" && session) {
+                try {
+                    // IP adresini al
+                    const ipResponse = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await ipResponse.json();
+                    
+                    // Log verilerine user_id ekle
+                    message.logData.user_id = session.user.id;
+                    message.logData.ip_address = ipData.ip;
+                    
+                    // Supabase'e kaydet
+                    await supabaseClient
+                        .from('user_logs')
+                        .insert([message.logData]);
+                    
+                    sendResponse({ success: true });
+                } catch (error) {
+                    console.error('Log kaydetme hatası:', error);
+                    sendResponse({ success: false, error });
+                }
+            }
+            return true;
         });
 
         if (error || !session) {
@@ -140,6 +160,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('logoutButton').addEventListener('click', async () => {
             try {
+                // Çıkış yapma işlemini logla
+                chrome.runtime.sendMessage({
+                    action: "logActivity",
+                    eventType: "user_logout",
+                    description: "Kullanıcı çıkış yaptı"
+                });
+                
                 // Önce partslink24.com session ve cookie'lerini temizle
                 const cookieRemovalPromises = [
                     chrome.cookies.remove({
