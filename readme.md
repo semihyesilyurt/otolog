@@ -27,6 +27,11 @@ Modern arayüzlü oturum yönetim eklentisi.
 
 ## Sürüm Notları
 
+### v1.2.4
+- Otomatik güncelleme sistemi iyileştirildi
+- Güncelleme kontrol mekanizması güncellendi
+- Performans iyileştirmeleri yapıldı
+
 ### v1.2.3
 - GitHub entegrasyonu tamamlandı
 - Otomatik güncelleme sistemi eklendi

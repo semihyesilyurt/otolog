@@ -1,16 +1,15 @@
 {
   "manifest_version": 3,
   "name": "OTOLOG",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Modern arayüzlü oturum yönetim eklentisi",
+  "update_url": "https://otolog.com/updates/updates.xml",
   "permissions": [
     "storage",
     "proxy",
     "webRequest",
     "webRequestAuthProvider",
     "notifications",
-    "alarms",
-    "downloads",
     "cookies"
   ],
   "host_permissions": [
@@ -20,9 +19,9 @@
     "*://*.doubleclick.net/*",
     "*://*.googletagmanager.com/*",
     "*://*.supabase.co/*",
-    "https://api.github.com/*",
-    "https://github.com/*",
-    "https://api.ipify.org/*"
+    "https://api.ipify.org/*",
+    "http://77.92.154.204:34834/*",
+    "https://parcakatalog.com/*"
   ],
   "background": {
     "service_worker": "js/background.js"

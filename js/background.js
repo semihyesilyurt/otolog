@@ -135,54 +135,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
-// GitHub API endpoint'i
-const GITHUB_REPO = 'semihyesilyurt/otolog';
-const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
-
-// Sürüm kontrolü
+// Güncelleme kontrolü
 async function checkForUpdates() {
     try {
-        // Mevcut sürümü al
         const manifest = chrome.runtime.getManifest();
         const currentVersion = manifest.version;
+        
+        // updates.xml'i kontrol et
+        const response = await fetch('https://parcakatalog.com/updates/updates.xml', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/xml'
+            }
+        });
 
-        // GitHub'dan en son sürümü kontrol et
-        const response = await fetch(GITHUB_API);
-        const data = await response.json();
-
-        // API yanıtını kontrol et
-        if (!data || !data.tag_name) {
-            console.log('Henüz yayınlanmış bir sürüm yok');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const xmlText = await response.text();
+        
+        // XML'i manuel olarak parse et
+        const versionMatch = xmlText.match(/version="([^"]+)"/);
+        const codebaseMatch = xmlText.match(/codebase="([^"]+)"/);
+        
+        if (!versionMatch || !codebaseMatch) {
+            console.log('Sürüm bilgisi bulunamadı');
             return;
         }
-
-        // Sürüm numarasını temizle (v1.1.0 -> 1.1.0)
-        const latestVersion = data.tag_name.toLowerCase().replace(/^v/, '');
-
+        
+        const newVersion = versionMatch[1];
+        const codebase = codebaseMatch[1];
+        
         // Sürümleri karşılaştır
-        if (compareVersions(latestVersion, currentVersion) > 0) {
-            // Yeni sürüm bulundu, güncelleme bildirimini göster
+        if (compareVersions(newVersion, currentVersion) > 0) {
+            // Yeni sürüm mevcut, bildirim göster
             chrome.notifications.create('update-available', {
                 type: 'basic',
                 iconUrl: 'images/icon128.png',
                 title: 'OTOLOG Güncelleme',
-                message: `Yeni sürüm (${latestVersion}) mevcut. Güncellemek için tıklayın.`,
+                message: `Yeni sürüm (${newVersion}) mevcut. Güncellemek için tıklayın.`,
                 requireInteraction: true
-            });
-
-            // Yeni sürümü indir
-            const zipUrl = data.zipball_url;
-            const updateResponse = await fetch(zipUrl);
-            const updateBlob = await updateResponse.blob();
-
-            // Güncelleme dosyasını kaydet
-            const updateFile = new File([updateBlob], 'update.zip');
-            
-            // Chrome'un kendi güncelleme sistemini kullan
-            chrome.runtime.requestUpdateCheck((status) => {
-                if (status === 'update_available') {
-                    chrome.runtime.reload();
-                }
             });
         }
     } catch (error) {
@@ -190,7 +183,7 @@ async function checkForUpdates() {
     }
 }
 
-// Sürüm numaralarını karşılaştır (1.0.0 vs 1.1.0)
+// Sürüm karşılaştırma yardımcı fonksiyonu
 function compareVersions(v1, v2) {
     const v1Parts = v1.split('.').map(Number);
     const v2Parts = v2.split('.').map(Number);
@@ -202,7 +195,6 @@ function compareVersions(v1, v2) {
         if (v1Part > v2Part) return 1;
         if (v1Part < v2Part) return -1;
     }
-    
     return 0;
 }
 
@@ -211,7 +203,7 @@ chrome.notifications.onClicked.addListener((notificationId) => {
     if (notificationId === 'update-available') {
         // Güncelleme sayfasını aç
         chrome.tabs.create({
-            url: `https://github.com/${GITHUB_REPO}/releases/latest`
+            url: 'https://otolog.com/updates/latest'
         });
     }
 });
@@ -225,21 +217,12 @@ chrome.runtime.onInstalled.addListener(async () => {
     isEnabled = false;
     isSubscriptionExpired = false;
     isAuthenticated = false;
-    
-    // İlk sürüm kontrolünü yap
+
+    // İlk güncelleme kontrolü
     await checkForUpdates();
 
-    // Her 6 saatte bir güncelleme kontrolü yap
-    chrome.alarms.create('updateCheck', {
-        periodInMinutes: 360 // 6 saat
-    });
-});
-
-// Periyodik güncelleme kontrolü
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === 'updateCheck') {
-        checkForUpdates();
-    }
+    // Her 6 saatte bir güncelleme kontrolü
+    setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
 });
 
 // Sistem hataları için listener
