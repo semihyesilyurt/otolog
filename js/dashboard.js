@@ -114,6 +114,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         currentUser = session.user;
+        
+        // Background script'e email bilgisini gönder
+        await chrome.runtime.sendMessage({ 
+            action: "setAuthStatus", 
+            isAuthenticated: true,
+            userEmail: currentUser.email
+        });
+
         await checkSubscription();
 
         // Aktif mod durumunu kontrol et ve ayarla
@@ -184,10 +192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Supabase oturumunu sonlandır
                 await supabaseClient.auth.signOut();
 
-                // Background script'e oturum durumunu bildir ve proxy'yi devre dışı bırak
+                // Background script'e oturum durumunu ve email'i bildir
                 await chrome.runtime.sendMessage({ 
                     action: "setAuthStatus", 
-                    isAuthenticated: false 
+                    isAuthenticated: false,
+                    userEmail: null
                 });
                 await chrome.runtime.sendMessage({ 
                     action: "toggleProxy", 

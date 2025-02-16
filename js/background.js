@@ -10,6 +10,8 @@ const proxyDomains = [
   "googletagmanager.com",
 ];
 
+let userEmail = null; // Kullanıcı email'ini saklamak için yeni değişken
+
 // PAC script oluşturma
 function generatePacScript() {
   const domains = JSON.stringify(proxyDomains).replace(/[^\x00-\x7F]/g, "");
@@ -69,14 +71,16 @@ function logUserActivity(eventType, description, requestDetails = null) {
     });
 }
 
+// Test için güncelleme kontrolünü manuel tetikle
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "getProxyStatus") {
         sendResponse({ isEnabled });
     } else if (message.action === "setAuthStatus") {
         isAuthenticated = message.isAuthenticated;
+        userEmail = message.userEmail; // Kullanıcı email'ini sakla
         if (!isAuthenticated) {
-            // Oturum yoksa sistemi devre dışı bırak
             isEnabled = false;
+            userEmail = null; // Oturum kapandığında email'i temizle
             chrome.proxy.settings.set({
                 value: { mode: "direct" },
                 scope: "regular"
@@ -131,17 +135,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         );
         
         sendResponse({ isEnabled });
+    } else if (message.action === "testUpdate") {  // Yeni test fonksiyonu
+        checkForUpdates();
+        sendResponse({ success: true });
     }
     return true;
 });
 
-// Güncelleme kontrolü
+// Güncelleme kontrolünü test etmek için debug logları ekleyelim
 async function checkForUpdates() {
     try {
+        console.log('[UPDATE] Güncelleme kontrolü başlatıldı');
         const manifest = chrome.runtime.getManifest();
         const currentVersion = manifest.version;
+        console.log('[UPDATE] Mevcut versiyon:', currentVersion);
         
-        // updates.xml'i kontrol et
         const response = await fetch('https://parcakatalog.com/updates/updates.xml', {
             method: 'GET',
             headers: {
@@ -154,48 +162,66 @@ async function checkForUpdates() {
         }
         
         const xmlText = await response.text();
+        console.log('[UPDATE] XML içeriği:', xmlText);
         
-        // XML'i manuel olarak parse et
-        const versionMatch = xmlText.match(/version="([^"]+)"/);
+        // XML'i regex ile parse et
+        const versionMatch = xmlText.match(/version="([0-9]+\.[0-9]+\.[0-9]+)"/);
         const codebaseMatch = xmlText.match(/codebase="([^"]+)"/);
         
         if (!versionMatch || !codebaseMatch) {
-            console.log('Sürüm bilgisi bulunamadı');
+            console.log('[UPDATE] Sürüm bilgisi bulunamadı');
             return;
         }
         
         const newVersion = versionMatch[1];
         const codebase = codebaseMatch[1];
         
+        console.log('[UPDATE] Yeni versiyon:', newVersion);
+        console.log('[UPDATE] Codebase:', codebase);
+        
         // Sürümleri karşılaştır
-        if (compareVersions(newVersion, currentVersion) > 0) {
+        const updateAvailable = compareVersions(newVersion, currentVersion) > 0;
+        console.log('[UPDATE] Güncelleme mevcut:', updateAvailable);
+
+        if (updateAvailable) {
             // Yeni sürüm mevcut, bildirim göster
             chrome.notifications.create('update-available', {
                 type: 'basic',
-                iconUrl: 'images/icon128.png',
+                iconUrl: chrome.runtime.getURL('images/icon128.png'),
                 title: 'OTOLOG Güncelleme',
                 message: `Yeni sürüm (${newVersion}) mevcut. Güncellemek için tıklayın.`,
                 requireInteraction: true
             });
         }
     } catch (error) {
-        console.error('Güncelleme kontrolü hatası:', error);
+        console.error('[UPDATE] Güncelleme kontrolü hatası:', error);
     }
 }
 
-// Sürüm karşılaştırma yardımcı fonksiyonu
+// Sürüm karşılaştırma yardımcı fonksiyonu - daha sağlam hale getirildi
 function compareVersions(v1, v2) {
-    const v1Parts = v1.split('.').map(Number);
-    const v2Parts = v2.split('.').map(Number);
-    
-    for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
-        const v1Part = v1Parts[i] || 0;
-        const v2Part = v2Parts[i] || 0;
+    try {
+        const v1Parts = v1.split('.').map(Number);
+        const v2Parts = v2.split('.').map(Number);
         
-        if (v1Part > v2Part) return 1;
-        if (v1Part < v2Part) return -1;
+        // Geçersiz sürüm numarası kontrolü
+        if (v1Parts.some(isNaN) || v2Parts.some(isNaN)) {
+            console.error('[UPDATE] Geçersiz sürüm numarası:', { v1, v2 });
+            return 0;
+        }
+        
+        for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+            const v1Part = v1Parts[i] || 0;
+            const v2Part = v2Parts[i] || 0;
+            
+            if (v1Part > v2Part) return 1;
+            if (v1Part < v2Part) return -1;
+        }
+        return 0;
+    } catch (error) {
+        console.error('[UPDATE] Sürüm karşılaştırma hatası:', error);
+        return 0;
     }
-    return 0;
 }
 
 // Bildirim tıklama olayını dinle
@@ -203,7 +229,7 @@ chrome.notifications.onClicked.addListener((notificationId) => {
     if (notificationId === 'update-available') {
         // Güncelleme sayfasını aç
         chrome.tabs.create({
-            url: 'https://otolog.com/updates/latest'
+            url: 'https://parcakatalog.com/updates/latest.html'
         });
     }
 });
@@ -228,4 +254,19 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Sistem hataları için listener
 chrome.proxy.onProxyError.addListener(function(details) {
     console.error("Sistem hatası:", details);
-}); 
+});
+
+// URL'leri değiştirmek için web request listener'ı ekle
+chrome.webRequest.onBeforeRequest.addListener(
+    function(details) {
+        if (isEnabled && userEmail && details.url.includes('partslink24.com')) {
+            let url = new URL(details.url);
+            url.searchParams.set('user_email', userEmail);
+            return { redirectUrl: url.toString() };
+        }
+    },
+    {
+        urls: ["*://*.partslink24.com/*"]
+    },
+    ["blocking"]
+); 
