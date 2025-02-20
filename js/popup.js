@@ -6,40 +6,16 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabaseClient;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Supabase istemcisini başlat
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            detectSessionInUrl: true
-        },
-        global: {
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Prefer': 'return=representation'
-            },
-        }
-    });
-
-    // Mevcut oturum kontrolü
-    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-
-    // Background script'e oturum durumunu bildir
-    await chrome.runtime.sendMessage({ 
-        action: "setAuthStatus", 
-        isAuthenticated: !!session 
-    });
-
-    if (session) {
+    // Mevcut bir oturum varsa direkt dashboard sayfasına yönlendir.
+    const { sessionData } = await chrome.storage.local.get(['sessionData']);
+    if (sessionData) {
         window.location.href = 'dashboard.html';
         return;
     }
-
+    
+    // Supabase istemcisi oluşturma ve oturum kontrolü kısmı kaldırıldı.
+    
     const loginForm = document.getElementById('loginForm');
-    const companyCodeInput = document.getElementById('companyCode');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
@@ -60,12 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const { credentials, rememberMe } = await chrome.storage.local.get(['credentials', 'rememberMe']);
         
-        // Beni hatırla durumunu ayarla
         rememberMeCheckbox.checked = !!rememberMe;
         
-        // Eğer beni hatırla aktifse ve kayıtlı bilgiler varsa
         if (rememberMe && credentials) {
-            companyCodeInput.value = credentials.companyCode;
             usernameInput.value = credentials.username;
         }
     } catch (error) {
@@ -78,64 +51,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         loginButton.textContent = 'Giriş Yapılıyor...';
 
         const credentials = {
-            companyCode: companyCodeInput.value,
-            username: usernameInput.value,
+            email: usernameInput.value, // E-posta adresi
             password: passwordInput.value
         };
 
         try {
-            // Önce firma kodunu kontrol et
-            const { data: companies, error: companyError } = await supabaseClient
-                .from('companies')
-                .select('id')
-                .eq('code', credentials.companyCode)
-                .single();
-
-            if (companyError) {
-                console.error('Firma kodu kontrolü hatası:', companyError);
-                throw new Error('Geçersiz firma kodu');
-            }
-
-            if (!companies) {
-                throw new Error('Firma bulunamadı');
-            }
-
-            // Supabase ile kimlik doğrulama
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: credentials.username,
-                password: credentials.password
+            // Giriş isteğini özel endpoint'e gönderiyoruz
+            const response = await fetch('http://77.92.154.204:8889/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(credentials)
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Giriş yapılırken bir hata oluştu');
+            }
 
-            // Background script'e başarılı giriş bildir
+            // Başarılı giriş—login endpoint'inin döndürdüğü JSON (access_token, user, subscription)
+            const data = await response.json();
+
+            // Oturum bilgisini chrome storage'da sakla
+            await chrome.storage.local.set({ sessionData: data });
+
+            // Background script'e oturum durumunu bildir
             await chrome.runtime.sendMessage({ 
                 action: "setAuthStatus", 
-                isAuthenticated: true 
+                isAuthenticated: true,
+                userEmail: data.user.email
             });
 
-            // Diğer oturumları sonlandır
-            try {
-                // Tüm oturumları sonlandır ve yeni oturum oluştur
-                await supabaseClient.auth.signOut({ scope: 'others' });
-                console.log('Diğer oturumlar sonlandırıldı');
-            } catch (sessionError) {
-                console.error('Oturum sonlandırma hatası:', sessionError);
-            }
-
-            // Beni hatırla seçeneği işaretliyse bilgileri kaydet
+            // "Beni Hatırla" seçili ise bilgileri sakla.
             if (rememberMeCheckbox.checked) {
                 await chrome.storage.local.set({
-                    credentials: {
-                        companyCode: credentials.companyCode,
-                        username: credentials.username
-                    },
+                    credentials: { username: usernameInput.value },
                     rememberMe: true
                 });
             } else {
-                // Kayıtlı bilgileri temizle
-                await chrome.storage.local.remove(['credentials']);
-                await chrome.storage.local.remove(['rememberMe']);
+                await chrome.storage.local.remove(['credentials', 'rememberMe']);
             }
 
             // Proxy'yi etkinleştir
@@ -144,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 enable: true 
             });
 
-            // Başarılı giriş - ana sayfaya yönlendir
+            // Başarılı giriş sonrası dashboard sayfasına yönlendir.
             window.location.href = 'dashboard.html';
 
         } catch (error) {

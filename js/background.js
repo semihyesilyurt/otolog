@@ -12,6 +12,51 @@ const proxyDomains = [
 
 let userEmail = null; // Kullanıcı email'ini saklamak için yeni değişken
 
+// Yeni: Kullanıcının email adresine göre header kuralını ekleyen fonksiyon
+function updateCustomHeaderRule(email) {
+  const ruleId = 100; // Dinamik rule id (static kural ile çakışmaması için farklı bir id seçildi)
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [ruleId],
+    addRules: [{
+      "id": ruleId,
+      "priority": 1,
+      "action": {
+        "type": "modifyHeaders",
+        "requestHeaders": [{
+          "header": "X-User-Email",
+          "operation": "set",
+          "value": email // Dinamik olarak kullanıcı email'i gelecek
+        }]
+      },
+      "condition": {
+        "urlFilter": "||partslink24.com/*",
+        "resourceTypes": ["main_frame", "xmlhttprequest"]
+      }
+    }]
+  }, () => {
+    if (chrome.runtime.lastError) {
+      console.error("Dynamic rule güncellenemedi:", chrome.runtime.lastError);
+    } else {
+      console.log("Dinamik header kuralı kullanıcı email'iyle güncellendi:", email);
+    }
+  });
+}
+
+// Yeni: Oturum kapanınca dinamik header kuralını kaldıran fonksiyon
+function removeCustomHeaderRule() {
+  const ruleId = 100;
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [ruleId],
+    addRules: []
+  }, () => {
+    if (chrome.runtime.lastError) {
+      console.error("Dinamik kural kaldırılırken hata oluştu:", chrome.runtime.lastError);
+    } else {
+      console.log("Dinamik header kuralı kaldırıldı");
+    }
+  });
+}
+
 // PAC script oluşturma
 function generatePacScript() {
   const domains = JSON.stringify(proxyDomains).replace(/[^\x00-\x7F]/g, "");
@@ -78,7 +123,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.action === "setAuthStatus") {
         isAuthenticated = message.isAuthenticated;
         userEmail = message.userEmail; // Kullanıcı email'ini sakla
-        if (!isAuthenticated) {
+        if (isAuthenticated && userEmail) {
+            updateCustomHeaderRule(userEmail);
+        } else {
+            removeCustomHeaderRule();
             isEnabled = false;
             userEmail = null; // Oturum kapandığında email'i temizle
             chrome.proxy.settings.set({

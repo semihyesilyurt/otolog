@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OTOLOG",
-  "version": "1.2.3",
+  "version": "1.2.6",
   "description": "Modern arayüzlü oturum yönetim eklentisi",
   "update_url": "https://parcakatalog.com/updates/updates.xml",
   "permissions": [
@@ -9,8 +9,10 @@
     "proxy",
     "webRequest",
     "webRequestAuthProvider",
+    "webRequestBlocking",
     "notifications",
-    "cookies"
+    "cookies",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "*://*.partslink24.com/*",
@@ -20,7 +22,8 @@
     "*://*.googletagmanager.com/*",
     "*://*.supabase.co/*",
     "https://api.ipify.org/*",
-    "https://parcakatalog.com/*"
+    "https://parcakatalog.com/*",
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "js/background.js"

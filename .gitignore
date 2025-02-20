@@ -35,3 +35,8 @@ yarn-error.log*
 # Chrome Extension specific
 *.pem
 *.crx 
+
+# Python
+*.pyc
+__pycache__/
+main.py
