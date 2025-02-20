@@ -21,8 +21,6 @@
     "*://*.doubleclick.net/*",
     "*://*.googletagmanager.com/*",
     "*://*.supabase.co/*",
-    "https://api.ipify.org/*",
-    "https://parcakatalog.com/*",
     "<all_urls>"
   ],
   "background": {

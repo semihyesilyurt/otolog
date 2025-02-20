@@ -1,6 +1,4 @@
 // Supabase yapılandırması
-const SUPABASE_URL = 'https://vjdbbbgfnebdptyfmnkx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZGJiYmdmbmViZHB0eWZtbmt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MzE4MzQsImV4cCI6MjA1MjEwNzgzNH0.67HlAfvqrg_Yua7jKbjt7YrT7PeLA9BjNKa6MIR0fWY';
 
 // Supabase client'ı window yüklendikten sonra oluştur
 let supabaseClient;
@@ -57,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             // Giriş isteğini özel endpoint'e gönderiyoruz
-            const response = await fetch('http://77.92.154.204:8889/login', {
+            const response = await fetch('http://77.92.154.204:8887/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)

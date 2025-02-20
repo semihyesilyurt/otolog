@@ -84,9 +84,6 @@ let isEnabled = false;
 let isSubscriptionExpired = false;
 let isAuthenticated = false;
 
-// Supabase yapılandırması
-const SUPABASE_URL = 'https://vjdbbbgfnebdptyfmnkx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZGJiYmdmbmViZHB0eWZtbmt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MzE4MzQsImV4cCI6MjA1MjEwNzgzNH0.67HlAfvqrg_Yua7jKbjt7YrT7PeLA9BjNKa6MIR0fWY';
 
 // Log kaydetme fonksiyonu
 function logUserActivity(eventType, description, requestDetails = null) {
