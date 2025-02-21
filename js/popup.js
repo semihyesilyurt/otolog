@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         try {
             // Giriş isteğini özel endpoint'e gönderiyoruz
-            const response = await fetch('http://77.92.154.204:8889/l', {
+            const response = await fetch('http://api.sase.tr/l/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)

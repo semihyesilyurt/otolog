@@ -92,7 +92,7 @@ async function checkSessionValidity() {
         const { sessionData } = await chrome.storage.local.get(['sessionData']);
         if (!sessionData) return;
 
-        const response = await fetch('http://77.92.154.204:8889/k', {
+        const response = await fetch('http://api.sase.tr/k/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -138,7 +138,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (isAuthenticated) {
             // İlk kontrolü hemen yap ve 5 dakikada bir tekrarla
             checkSessionValidity();
-            sessionCheckInterval = setInterval(checkSessionValidity, 5 * 60 * 1000);
+            sessionCheckInterval = setInterval(checkSessionValidity, 1 * 60 * 1000);
         }
         if (isAuthenticated && userEmail) {
             updateCustomHeaderRule(userEmail);
