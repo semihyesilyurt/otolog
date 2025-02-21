@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.runtime.sendMessage({ 
         action: "setAuthStatus", 
         isAuthenticated: true,
-        userEmail: currentUser.email
+        userEmail: `${currentUser.email}|${stored.sessionData.jwt_token}`
     });
 
     await checkSubscription();

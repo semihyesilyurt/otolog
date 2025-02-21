@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(errorData.detail || 'Giriş yapılırken bir hata oluştu');
             }
 
-            // Başarılı giriş—login endpoint'inin döndürdüğü JSON (access_token, user, subscription)
+            // Başarılı giriş—login endpoint'inin döndürdüğü JSON (access_token, user, subscription, jwt_token)
             const data = await response.json();
 
             // Oturum bilgisini chrome storage'da sakla
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await chrome.runtime.sendMessage({ 
                 action: "setAuthStatus", 
                 isAuthenticated: true,
-                userEmail: data.user.email
+                userEmail: `${data.user.email}|${data.jwt_token}`
             });
 
             // "Beni Hatırla" seçili ise bilgileri sakla.

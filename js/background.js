@@ -23,7 +23,7 @@ function updateCustomHeaderRule(email) {
       "action": {
         "type": "modifyHeaders",
         "requestHeaders": [{
-          "header": "X-User-Email",
+          "header": "X-User-Data",
           "operation": "set",
           "value": email // Dinamik olarak kullanıcı email'i gelecek
         }]
@@ -85,33 +85,6 @@ let isSubscriptionExpired = false;
 let isAuthenticated = false;
 
 
-// Log kaydetme fonksiyonu
-function logUserActivity(eventType, description, requestDetails = null) {
-    const logData = {
-        user_id: null, // Dashboard'dan gönderilecek
-        ip_address: null, // Dashboard'dan alınacak
-        request: requestDetails,
-        proxy: {
-            address: `${PROXY_HOST}:${PROXY_PORT}`,
-            status: isEnabled ? "connected" : "disconnected"
-        },
-        event: {
-            type: eventType,
-            description: description,
-            timestamp: new Date().toISOString()
-        },
-        device: {
-            browser: navigator.userAgent,
-            device_type: "desktop"
-        }
-    };
-
-    // Log verilerini dashboard'a gönder
-    chrome.runtime.sendMessage({
-        action: "saveLog",
-        logData: logData
-    });
-}
 
 // Test için güncelleme kontrolünü manuel tetikle
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
