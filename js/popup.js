@@ -1,7 +1,4 @@
-// Supabase yapılandırması
 
-// Supabase client'ı window yüklendikten sonra oluştur
-let supabaseClient;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Mevcut bir oturum varsa direkt dashboard sayfasına yönlendir.
@@ -11,7 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // Supabase istemcisi oluşturma ve oturum kontrolü kısmı kaldırıldı.
     
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
@@ -52,10 +48,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             email: usernameInput.value, // E-posta adresi
             password: passwordInput.value
         };
-
+        
         try {
             // Giriş isteğini özel endpoint'e gönderiyoruz
-            const response = await fetch('http://77.92.154.204:8887/login', {
+            const response = await fetch('http://77.92.154.204:8889/l', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)

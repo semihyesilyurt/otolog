@@ -1,5 +1,5 @@
 const PROXY_HOST = "77.92.154.204";
-const PROXY_PORT = 8887;
+const PROXY_PORT = 8889;
 
 
 const proxyDomains = [
@@ -84,7 +84,46 @@ let isEnabled = false;
 let isSubscriptionExpired = false;
 let isAuthenticated = false;
 
+// Yeni: Periyodik oturum kontrolü fonksiyonu
+let sessionCheckInterval;
 
+async function checkSessionValidity() {
+    try {
+        const { sessionData } = await chrome.storage.local.get(['sessionData']);
+        if (!sessionData) return;
+
+        const response = await fetch('http://77.92.154.204:8889/k', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                token: `${sessionData.user.email}|${sessionData.jwt_token}` 
+            })
+        });
+
+        if (!response.ok) throw new Error('Session check failed');
+        const result = await response.text();
+        
+        if (result === '0') {
+            // Oturumu sonlandır
+            await chrome.storage.local.remove(['sessionData', 'activeModeState']);
+            await chrome.runtime.sendMessage({ 
+                action: "setAuthStatus", 
+                isAuthenticated: false,
+                userEmail: null
+            });
+            await chrome.runtime.sendMessage({ 
+                action: "toggleProxy", 
+                enable: false 
+            });
+            // Tüm açık popup'ları kapat
+            chrome.extension.getViews({ type: 'popup' }).forEach(view => {
+                view.close();
+            });
+        }
+    } catch (error) {
+        console.error('Oturum kontrol hatası:', error);
+    }
+}
 
 // Test için güncelleme kontrolünü manuel tetikle
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -92,7 +131,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ isEnabled });
     } else if (message.action === "setAuthStatus") {
         isAuthenticated = message.isAuthenticated;
-        userEmail = message.userEmail; // Kullanıcı email'ini sakla
+        userEmail = message.userEmail;
+        
+        // Oturum durumu değiştiğinde interval'i yeniden ayarla
+        if (sessionCheckInterval) clearInterval(sessionCheckInterval);
+        if (isAuthenticated) {
+            // İlk kontrolü hemen yap ve 5 dakikada bir tekrarla
+            checkSessionValidity();
+            sessionCheckInterval = setInterval(checkSessionValidity, 5 * 60 * 1000);
+        }
         if (isAuthenticated && userEmail) {
             updateCustomHeaderRule(userEmail);
         } else {
