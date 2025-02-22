@@ -136,9 +136,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Oturum durumu değiştiğinde interval'i yeniden ayarla
         if (sessionCheckInterval) clearInterval(sessionCheckInterval);
         if (isAuthenticated) {
-            // İlk kontrolü hemen yap ve 5 dakikada bir tekrarla
+            // İlk kontrolü hemen yap ve 10 dakikada bir tekrarla
             checkSessionValidity();
-            sessionCheckInterval = setInterval(checkSessionValidity, 1 * 60 * 1000);
+            sessionCheckInterval = setInterval(checkSessionValidity, 10 * 60 * 1000);
         }
         if (isAuthenticated && userEmail) {
             updateCustomHeaderRule(userEmail);
