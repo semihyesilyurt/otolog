@@ -1,7 +1,3 @@
-const PROXY_HOST = "77.92.154.204";
-const PROXY_PORT = 8889;
-
-
 const proxyDomains = [
   "partslink24.com",
   "usercentrics.eu",
@@ -10,7 +6,29 @@ const proxyDomains = [
   "googletagmanager.com",
 ];
 
-let userEmail = null; // Kullanıcı email'ini saklamak için yeni değişken
+let userEmail = null;
+let currentProxyHost = null; // Yeni: Storage'dan gelen proxy host
+let currentProxyPort = null; // Yeni: Storage'dan gelen proxy port
+
+// Eklenti aktivite loglama fonksiyonu tanımlaması
+function logUserActivity(eventType, description) {
+    console.log(`[LOG] ${eventType}: ${description}`);
+}
+
+// Listen for changes in sessionData to disable proxy if session is removed
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.sessionData) {
+        // Eğer sessionData kaldırılmışsa (yeni değeri undefined ise) otomatik proxy'yi disable et
+        if (!changes.sessionData.newValue) {
+            isEnabled = false;
+            chrome.proxy.settings.set({
+                value: { mode: "direct" },
+                scope: "regular"
+            });
+            //logUserActivity("session_terminated", "Session data removed, proxy disabled.");
+        }
+    }
+});
 
 // Yeni: Kullanıcının email adresine göre header kuralını ekleyen fonksiyon
 function updateCustomHeaderRule(email) {
@@ -37,7 +55,7 @@ function updateCustomHeaderRule(email) {
     if (chrome.runtime.lastError) {
       console.error("Dynamic rule güncellenemedi:", chrome.runtime.lastError);
     } else {
-      console.log("Dinamik header kuralı kullanıcı email'iyle güncellendi:", email);
+      console.log("Dinamik header kuralı kullanıcı email'iyle güncellendi");
     }
   });
 }
@@ -59,24 +77,29 @@ function removeCustomHeaderRule() {
 
 // PAC script oluşturma
 function generatePacScript() {
-  const domains = JSON.stringify(proxyDomains).replace(/[^\x00-\x7F]/g, "");
-  return `
-    function FindProxyForURL(url, host) {
-      var proxyDomains = ${domains};
-      
-      function checkDomain(domain) {
-        return shExpMatch(host, "*." + domain) || shExpMatch(host, domain);
-      }
-
-      for (var i = 0; i < proxyDomains.length; i++) {
-        if (checkDomain(proxyDomains[i])) {
-          return "PROXY ${PROXY_HOST}:${PROXY_PORT}";
-        }
-      }
-
-      return "DIRECT";
+    if (!currentProxyHost || !currentProxyPort) {
+        console.error('Proxy ayarları bulunamadı!');
+        return 'DIRECT';
     }
-  `.replace(/[^\x00-\x7F]/g, "");
+    
+    const domains = JSON.stringify(proxyDomains).replace(/[^\x00-\x7F]/g, "");
+    return `
+        function FindProxyForURL(url, host) {
+            var proxyDomains = ${domains};
+            
+            function checkDomain(domain) {
+                return shExpMatch(host, "*." + domain) || shExpMatch(host, domain);
+            }
+
+            for (var i = 0; i < proxyDomains.length; i++) {
+                if (checkDomain(proxyDomains[i])) {
+                    return "PROXY ${currentProxyHost}:${currentProxyPort}";
+                }
+            }
+
+            return "DIRECT";
+        }
+    `.replace(/[^\x00-\x7F]/g, "");
 }
 
 // Eklenti aktif/pasif durumu kontrolü
@@ -92,6 +115,16 @@ async function checkSessionValidity() {
         const { sessionData } = await chrome.storage.local.get(['sessionData']);
         if (!sessionData) return;
 
+        // Yeni: Proxy bilgisini parse et ve sakla
+        if (sessionData.proxy) {
+            const [host, port] = sessionData.proxy.split(':');
+            currentProxyHost = host;
+            currentProxyPort = port;
+            await chrome.storage.local.set({ 
+                proxySettings: { host, port } 
+            });
+        }
+
         const response = await fetch('http://api.sase.tr/k/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,7 +136,7 @@ async function checkSessionValidity() {
         if (!response.ok) throw new Error('Session check failed');
         const result = await response.text();
         
-        if (result === '0') {
+        if (result.trim() === '0') {
             // Oturumu sonlandır
             await chrome.storage.local.remove(['sessionData', 'activeModeState']);
             await chrome.runtime.sendMessage({ 
@@ -151,9 +184,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 scope: "regular"
             });
         }
+        // Yeni: Proxy bilgilerini sessionData'dan al ve sakla
+        chrome.storage.local.get(['sessionData'], ({ sessionData }) => {
+            if (sessionData && sessionData.proxy) {
+                const [host, port] = sessionData.proxy.split(':');
+                chrome.storage.local.set({ proxySettings: { host, port } });
+                // Ayrıca değişkenlere de atayabiliriz
+                currentProxyHost = host;
+                currentProxyPort = port;
+            }
+        });
         sendResponse({ success: true });
     } else if (message.action === "toggleProxy") {
-        // Oturum yoksa sistemi etkinleştirmeyi reddet
+        // Yeni düzenleme:
+        // Eğer proxy devre dışı bırakılmak isteniyorsa, authentication kontrolü yapmadan doğrudan disable ediyoruz.
+        if (message.enable === false) {
+            isEnabled = false;
+            chrome.proxy.settings.set({
+                value: { mode: "direct" },
+                scope: "regular"
+            });
+            logUserActivity("proxy_status_changed", "Proxy durumu pasif olarak ayarlandı.");
+            sendResponse({ isEnabled });
+            return true;
+        }
+        
+        // Proxy'yi aktif hale getirmek için oturum kontrolü yapılır.
         if (!isAuthenticated) {
             sendResponse({ 
                 isEnabled: false,
@@ -161,8 +217,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             return true;
         }
-
-        // Eğer forceDisable true ise, abonelik sona ermiş demektir
+    
         if (message.forceDisable) {
             isSubscriptionExpired = true;
             isEnabled = false;
@@ -173,7 +228,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             return true;
         } else {
-            isEnabled = message.enable !== undefined ? message.enable : !isEnabled;
+            isEnabled = message.enable;
         }
         
         if (isEnabled && !isSubscriptionExpired && isAuthenticated) {
@@ -193,13 +248,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
         }
         
-        // Proxy durumu değişikliğini logla
-        logUserActivity(
-            "proxy_status_changed",
-            `Proxy durumu ${message.enable ? 'aktif' : 'pasif'} olarak değiştirildi.`
-        );
+        logUserActivity("proxy_status_changed", `Proxy durumu ${isEnabled ? 'aktif' : 'pasif'} olarak değiştirildi.`);
         
         sendResponse({ isEnabled });
+        return true;
     } else if (message.action === "testUpdate") {  // Yeni test fonksiyonu
         checkForUpdates();
         sendResponse({ success: true });
@@ -210,7 +262,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Güncelleme kontrolünü test etmek için debug logları ekleyelim
 async function checkForUpdates() {
     try {
-        console.log('[UPDATE] Güncelleme kontrolü başlatıldı');
         const manifest = chrome.runtime.getManifest();
         const currentVersion = manifest.version;
         console.log('[UPDATE] Mevcut versiyon:', currentVersion);
@@ -227,7 +278,6 @@ async function checkForUpdates() {
         }
         
         const xmlText = await response.text();
-        console.log('[UPDATE] XML içeriği:', xmlText);
         
         // XML'i regex ile parse et
         const versionMatch = xmlText.match(/version="([0-9]+\.[0-9]+\.[0-9]+)"/);
@@ -242,7 +292,6 @@ async function checkForUpdates() {
         const codebase = codebaseMatch[1];
         
         console.log('[UPDATE] Yeni versiyon:', newVersion);
-        console.log('[UPDATE] Codebase:', codebase);
         
         // Sürümleri karşılaştır
         const updateAvailable = compareVersions(newVersion, currentVersion) > 0;
@@ -301,6 +350,13 @@ chrome.notifications.onClicked.addListener((notificationId) => {
 
 // Eklenti yüklendiğinde veya güncellendiğinde çalışacak
 chrome.runtime.onInstalled.addListener(async () => {
+    // Storage'dan proxy ayarlarını yükle
+    const { proxySettings } = await chrome.storage.local.get(['proxySettings']);
+    if (proxySettings) {
+        currentProxyHost = proxySettings.host;
+        currentProxyPort = proxySettings.port;
+    }
+    
     chrome.proxy.settings.set({
         value: { mode: "direct" },
         scope: "regular"
